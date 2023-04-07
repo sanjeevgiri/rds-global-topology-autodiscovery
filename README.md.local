@@ -1,7 +1,0 @@
-## Vertex Aurora Cluster
-GLOBALAURORAPOC_DATASOURCE_WRITER_JDBC_URL=jdbc:aws-wrapper:postgresql://shopify-sy-globaldb-secondary-cluster-1.cluster-cmbyhrfl2j8q.us-west-2.rds.amazonaws.com:5432/postgres
-GLOBALAURORAPOC_DATASOURCE_WRITER_USERNAME=postgres
-GLOBALAURORAPOC_DATASOURCE_WRITER_PASSWORD=mypassword
-GLOBALAURORAPOC_DATASOURCE_READER_JDBC_URL=jdbc:aws-wrapper:postgresql://shopify-sy-globaldb-secondary-cluster-1.cluster-cmbyhrfl2j8q.us-west-2.rds.amazonaws.com:5432/postgres
-GLOBALAURORAPOC_DATASOURCE_READER_USERNAME=postgres
-GLOBALAURORAPOC_DATASOURCE_READER_PASSWORD=mypassword
