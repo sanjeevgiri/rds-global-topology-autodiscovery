@@ -32,6 +32,20 @@
 			<version>1.18.26</version>
 			<scope>provided</scope>
 		</dependency>
+
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk</artifactId>
+			<version>1.12.446</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-rds</artifactId>
+			<version>1.12.445</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

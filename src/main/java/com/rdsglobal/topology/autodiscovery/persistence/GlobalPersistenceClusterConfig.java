@@ -1,6 +1,8 @@
 package com.rdsglobal.topology.autodiscovery.persistence;
 
 
+import com.amazonaws.services.rds.AmazonRDS;
+import com.amazonaws.services.rds.AmazonRDSClientBuilder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.util.HashMap;
@@ -19,15 +21,37 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@EnableJpaRepositories(
-  basePackages = "com.rdsglobal.topology.autodiscovery",
-  entityManagerFactoryRef = "writerEntityManager",
-  transactionManagerRef = "writerTransactionManager")
-public class PersistenceConfig {
+@EnableJpaRepositories(basePackages = "com.rdsglobal.topology.autodiscovery", entityManagerFactoryRef = "writerEntityManager", transactionManagerRef = "writerTransactionManager")
+public class GlobalPersistenceClusterConfig {
+
+  @Bean
+  @ConfigurationProperties(prefix = "autodiscovery.datasource")
+  public GlobalPersistenceClusterProperties globalClusterProperties() {
+    return new GlobalPersistenceClusterProperties();
+  }
+
+  @Bean
+  public AmazonRDS rdsGlobalClient() {
+    return AmazonRDSClientBuilder.standard().build();
+  }
+
+  @Bean
+  AmazonRDS rdsRegionalClient() {
+    return AmazonRDSClientBuilder.standard().withRegion(globalClusterProperties().getClientAppRegion()).build();
+  }
+
+  @Bean
+  public GlobalPersistenceClusterEndpoints globalClusterEndpoints() {
+    return GlobalPersistenceClusterUtil
+      .globalClusterEndpoints(rdsGlobalClient(), rdsRegionalClient(), globalClusterProperties());
+  }
+
   @Bean
   @Primary
   @ConfigurationProperties(prefix = "autodiscovery.datasource.writer")
   public HikariConfig writerHikariConfig() {
+    HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(globalClusterEndpoints().getWriterJdbcUrl());
     return new HikariConfig();
   }
 
@@ -52,6 +76,8 @@ public class PersistenceConfig {
   @Bean
   @ConfigurationProperties(prefix = "autodiscovery.datasource.reader")
   public HikariConfig readerHirakiConfig() {
+    HikariConfig config = new HikariConfig();
+    config.setJdbcUrl(globalClusterEndpoints().getReaderJdbcUrl());
     return new HikariConfig();
   }
 
