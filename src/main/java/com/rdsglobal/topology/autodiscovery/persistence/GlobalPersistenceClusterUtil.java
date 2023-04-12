@@ -9,9 +9,14 @@ import com.amazonaws.services.rds.model.DescribeDBClusterEndpointsResult;
 import com.amazonaws.services.rds.model.DescribeGlobalClustersRequest;
 import com.amazonaws.services.rds.model.GlobalCluster;
 import com.amazonaws.services.rds.model.GlobalClusterMember;
+import com.zaxxer.hikari.HikariConfig;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class GlobalPersistenceClusterUtil {
+  private static final Logger LOGGER = LoggerFactory.getLogger(GlobalPersistenceClusterUtil.class.getName());
+
   private GlobalPersistenceClusterUtil() {
   }
 
@@ -34,8 +39,8 @@ public final class GlobalPersistenceClusterUtil {
 
     GlobalPersistenceClusterEndpoints clusterTopology = new GlobalPersistenceClusterEndpoints();
 
-    clusterTopology.setWriterJdbcUrl(jdbcUrl(writerEndpoint, props.getName(), props.getPort()));
-    clusterTopology.setWriterJdbcUrl(jdbcUrl(readerEndpoint, props.getName(), props.getPort()));
+    clusterTopology.setWriterJdbcUrl(jdbcUrl(writerEndpoint, props.getPort(), props.getName()));
+    clusterTopology.setReaderJdbcUrl(jdbcUrl(readerEndpoint, props.getPort(), props.getName()));
     return clusterTopology;
   }
 
@@ -71,8 +76,9 @@ public final class GlobalPersistenceClusterUtil {
     AmazonRDS rdsClient, GlobalClusterMember member, GlobalPersistenceClusterEndpointType type
   ) {
     Arn clusterArn = Arn.fromString(member.getDBClusterArn());
-    DescribeDBClusterEndpointsRequest req = new DescribeDBClusterEndpointsRequest();
-    req.setDBClusterEndpointIdentifier(clusterArn.getResourceAsString());
+
+    DescribeDBClusterEndpointsRequest req = new DescribeDBClusterEndpointsRequest()
+      .withDBClusterIdentifier(clusterArn.getResource().getResource());
 
     DescribeDBClusterEndpointsResult dbClusterEndpoints = rdsClient.describeDBClusterEndpoints(req);
 
@@ -80,5 +86,16 @@ public final class GlobalPersistenceClusterUtil {
       .findFirst()
       .map(DBClusterEndpoint::getEndpoint)
       .orElseThrow(() -> new RuntimeException("Unable to find endpoint for member " + member.getDBClusterArn()));
+  }
+
+  static void printPersistenceConfig(GlobalPersistenceClusterEndpointType type, HikariConfig hikariConfig) {
+    LOGGER.info("************ Persistence configurations for type {} ************", type);
+    LOGGER.info("""
+        
+        Endpoint Type: {}
+        JDBC URL: {}
+        Pool Size: {}
+        
+      """, type, hikariConfig.getJdbcUrl(), hikariConfig.getMaximumPoolSize());
   }
 }

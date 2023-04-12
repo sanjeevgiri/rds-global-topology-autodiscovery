@@ -12,10 +12,12 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Shop {
   @Id
+  private String id;
   private String domain;
   private String name;
 
-  public Shop(String domain, String name) {
+  public Shop(String id, String domain, String name) {
+    this.id=id;
     this.domain = domain;
     this.name = name;
   }

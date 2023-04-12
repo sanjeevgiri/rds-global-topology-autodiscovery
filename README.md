@@ -7,6 +7,11 @@
 - The process needs to be tied to roles that can perfrom the following AWS API calls
   - `aws rds describe-global-cluster`
   - `aws rds describe-db-cluster-endpoints`
+- Plugin required environment variables for datasource credentials
+
+# Required environment variables
+AUTODISCOVERY_DATASOURCE_USERNAME=***
+AUTODISCOVERY_DATASOURCE_PASSWORD=***
 
 # Status
 Work in porgress
