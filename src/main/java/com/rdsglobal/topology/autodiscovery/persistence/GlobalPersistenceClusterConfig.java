@@ -36,14 +36,9 @@ public class GlobalPersistenceClusterConfig {
   }
 
   @Bean
-  AmazonRDS rdsRegionalClient() {
-    return AmazonRDSClientBuilder.standard().withRegion(globalClusterProperties().getClientAppRegion()).build();
-  }
-
-  @Bean
   public GlobalPersistenceClusterEndpoints globalClusterEndpoints() {
     return GlobalPersistenceClusterUtil
-      .globalClusterEndpoints(rdsGlobalClient(), rdsRegionalClient(), globalClusterProperties());
+      .globalClusterEndpoints(rdsGlobalClient(), globalClusterProperties());
   }
 
   @Bean

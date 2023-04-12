@@ -10,25 +10,33 @@ import com.amazonaws.services.rds.model.DescribeGlobalClustersRequest;
 import com.amazonaws.services.rds.model.GlobalCluster;
 import com.amazonaws.services.rds.model.GlobalClusterMember;
 import java.util.List;
-import java.util.Optional;
 
 public final class GlobalPersistenceClusterUtil {
   private GlobalPersistenceClusterUtil() {
   }
 
   static GlobalPersistenceClusterEndpoints globalClusterEndpoints(
-    AmazonRDS rdsGlobalClient, AmazonRDS rdsRegionalClient, GlobalPersistenceClusterProperties props
+    AmazonRDS rdsGlobalClient, GlobalPersistenceClusterProperties props
   ) {
     GlobalCluster globalCluster = globalCluster(rdsGlobalClient, props.getGlobalClusterId());
     GlobalClusterMember writer = writerCluster(globalCluster.getGlobalClusterMembers());
     GlobalClusterMember reader = readerCluster(globalCluster.getGlobalClusterMembers(), props.getClientAppRegion());
-    String writerEndpoint = clusterEndpoint(rdsRegionalClient, writer, GlobalPersistenceClusterEndpointType.WRITER);
-    String readerEndpoint = clusterEndpoint(rdsRegionalClient, reader, GlobalPersistenceClusterEndpointType.READER)
+    AmazonRDS writerRdsClient = AmazonRDSClientBuilder.standard()
+      .withRegion(Arn.fromString(writer.getDBClusterArn()).getRegion())
+      .build();
+
+    AmazonRDS readerRdsClient = AmazonRDSClientBuilder.standard()
+      .withRegion(Arn.fromString(reader.getDBClusterArn()).getRegion())
+      .build();
+
+    String writerEndpoint = clusterEndpoint(writerRdsClient, writer, GlobalPersistenceClusterEndpointType.WRITER);
+    String readerEndpoint = clusterEndpoint(readerRdsClient, reader, GlobalPersistenceClusterEndpointType.READER);
 
     GlobalPersistenceClusterEndpoints clusterTopology = new GlobalPersistenceClusterEndpoints();
 
     clusterTopology.setWriterJdbcUrl(jdbcUrl(writerEndpoint, props.getName(), props.getPort()));
-    return null;
+    clusterTopology.setWriterJdbcUrl(jdbcUrl(readerEndpoint, props.getName(), props.getPort()));
+    return clusterTopology;
   }
 
   private static String jdbcUrl(String endpoint, String port, String database) {
@@ -60,14 +68,13 @@ public final class GlobalPersistenceClusterUtil {
   }
 
   private static String clusterEndpoint(
-    AmazonRDS rdsRegionalClient, GlobalClusterMember member, GlobalPersistenceClusterEndpointType type
+    AmazonRDS rdsClient, GlobalClusterMember member, GlobalPersistenceClusterEndpointType type
   ) {
     Arn clusterArn = Arn.fromString(member.getDBClusterArn());
     DescribeDBClusterEndpointsRequest req = new DescribeDBClusterEndpointsRequest();
     req.setDBClusterEndpointIdentifier(clusterArn.getResourceAsString());
 
-    AmazonRDS rds = AmazonRDSClientBuilder.standard().withRegion(clusterArn.getRegion()).build();
-    DescribeDBClusterEndpointsResult dbClusterEndpoints = rds.describeDBClusterEndpoints(req);
+    DescribeDBClusterEndpointsResult dbClusterEndpoints = rdsClient.describeDBClusterEndpoints(req);
 
     return dbClusterEndpoints.getDBClusterEndpoints().stream().filter(e -> type.toString().equals(e.getEndpointType()))
       .findFirst()
