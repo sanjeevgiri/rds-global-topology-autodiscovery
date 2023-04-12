@@ -40,8 +40,8 @@ output=json
 
 [profile aws-test-account-poweruser]
 source_profile=default
-role_arn=arn:aws:iam::627915540598:role/vtx-PowerUser
-mfa_serial=arn:aws:iam::776380148969:mfa/Sanjeev.Giri@vertexinc.com
+role_arn=arn:aws:iam::****:role/roleName
+mfa_serial=arn:aws:iam::****:mfa/***@***.com
 ```
 - Ensure that the credentials for the default profile or any other inherited profile
 is included `~/.aws/credentials` file.
