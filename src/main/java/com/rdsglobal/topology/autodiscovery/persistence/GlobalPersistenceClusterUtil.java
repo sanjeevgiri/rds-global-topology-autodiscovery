@@ -20,7 +20,7 @@ public final class GlobalPersistenceClusterUtil {
   private GlobalPersistenceClusterUtil() {
   }
 
-  static GlobalPersistenceClusterEndpoints globalClusterEndpoints(
+  public static GlobalPersistenceClusterEndpoints globalClusterEndpoints(
     AmazonRDS rdsGlobalClient, GlobalPersistenceClusterProperties props
   ) {
     GlobalCluster globalCluster = globalCluster(rdsGlobalClient, props.getGlobalClusterId());
@@ -37,11 +37,11 @@ public final class GlobalPersistenceClusterUtil {
     String writerEndpoint = clusterEndpoint(writerRdsClient, writer, GlobalPersistenceClusterEndpointType.WRITER);
     String readerEndpoint = clusterEndpoint(readerRdsClient, reader, GlobalPersistenceClusterEndpointType.READER);
 
-    GlobalPersistenceClusterEndpoints clusterTopology = new GlobalPersistenceClusterEndpoints();
-
-    clusterTopology.setWriterJdbcUrl(jdbcUrl(writerEndpoint, props.getPort(), props.getName()));
-    clusterTopology.setReaderJdbcUrl(jdbcUrl(readerEndpoint, props.getPort(), props.getName()));
-    return clusterTopology;
+    return GlobalPersistenceClusterEndpoints.builder()
+      .globalClusterIdentifier(props.getGlobalClusterId())
+      .readerJdbcUrl(jdbcUrl(readerEndpoint, props.getPort(), props.getName()))
+      .writerJdbcUrl(jdbcUrl(writerEndpoint, props.getPort(), props.getName()))
+      .build();
   }
 
   private static String jdbcUrl(String endpoint, String port, String database) {

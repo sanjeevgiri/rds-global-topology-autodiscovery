@@ -1,10 +1,10 @@
 package com.rdsglobal.topology.autodiscovery.persistence;
 
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
+@Builder
 public class GlobalPersistenceClusterEndpoints {
   private String globalClusterIdentifier;
   private String writerJdbcUrl;
