@@ -40,8 +40,8 @@ output=json
 
 [profile aws-test-account-poweruser]
 source_profile=default
-role_arn=arn:aws:iam::627915540598:role/vtx-PowerUser
-mfa_serial=arn:aws:iam::776380148969:mfa/Sanjeev.Giri@vertexinc.com
+role_arn=arn:aws:iam::****:role/roleName
+mfa_serial=arn:aws:iam::****:mfa/***@***.com
 ```
 - Ensure that the credentials for the default profile or any other inherited profile
 is included `~/.aws/credentials` file.
@@ -50,11 +50,35 @@ is included `~/.aws/credentials` file.
 - On the Application debug/run configuration ensure desired profile is selected.
 ![ijrunconfig.png](ijrunconfig.png)
 
-# Running as a container in AppRunner or K8s Cluster
+# Running as a container in AppRunner
+
 - Build docker image by executing the following command
 ```shell
 mvn clean package -Pdocker
 ```
-- Ensure that the docker container process is associated to a profile or service account that allows connectivity to 
-RDS cluster and AWS RDS APIs
+- Create an IAM role with permissions to access AWS RDS describe* APIs
+![iamRole.png](iamRole.png)
+**I used a predefined policy as an example. For production usage please trim it down to the following:**
+```shell
+DescribeGlobalClusters
+DescribeDBClusterEndpoints
+```
+- Update the role trust relationship to allow app runner to assume the role
+![iamRoleTrustRelationship.png](iamRoleTrustRelationship.png)
+
+- Create an apprunner instance using the docker image, and permissions.
+
+![deployAppRunner1.png](deployAppRunner1.png)
+
+![deployAppRunner2.png](deployAppRunner2.png)
+
+![deployAppRunner3.png](deployAppRunner3.png)
+
+![deployAppRunner4.png](deployAppRunner4.png)
+
+![deployAppRunner5.png](deployAppRunner5.png)
+
+# Running as a Kubernetes Container
+Ensure that the k8s deployment is tied to a IAM Role as a Service Account (IRSA) with neccessary policies 
+to `DescribeGlobalClusters` and `DescribeDBClusterEndpoints`
 
