@@ -1,6 +1,7 @@
 package com.rdsglobal.topology.autodiscovery.persistence;
 
 import com.amazonaws.services.rds.AmazonRDS;
+import io.vavr.control.Try;
 import java.util.concurrent.TimeUnit;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,8 @@ public class GlobalPersistenceClusterInfoService {
 
   @Scheduled(fixedDelay = 2, initialDelay = 2, timeUnit = TimeUnit.MINUTES)
   public void refreshRunTimeDbClusterEndpoints() {
-    this.runTimeDbClusterEndpoints = GlobalPersistenceClusterUtil.globalClusterEndpoints(amazonRdsGlobalClient, props);
+    this.runTimeDbClusterEndpoints = Try
+      .of(() -> GlobalPersistenceClusterUtil.globalClusterEndpoints(amazonRdsGlobalClient, props))
+      .getOrElse(runTimeDbClusterEndpoints); // fallback to last known config if rate limited / throttled down
   }
 }

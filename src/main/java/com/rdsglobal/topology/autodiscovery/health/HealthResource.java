@@ -1,4 +1,4 @@
-package com.rdsglobal.topology.health;
+package com.rdsglobal.topology.autodiscovery.health;
 
 import com.rdsglobal.topology.autodiscovery.persistence.GlobalPersistenceClusterEndpoints;
 import lombok.Builder;

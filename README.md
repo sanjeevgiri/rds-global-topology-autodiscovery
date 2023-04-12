@@ -11,6 +11,7 @@
 
 # Required environment variables
 AUTODISCOVERY_DATASOURCE_USERNAME=***
+
 AUTODISCOVERY_DATASOURCE_PASSWORD=***
 
 # Status
