@@ -3,6 +3,7 @@ package com.rdsglobal.topology.autodiscovery.shop;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,8 +30,8 @@ public class ShopController {
     service.create(resource);
   }
 
-  @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public void update(@RequestBody ShopResource resource) {
-    service.update(resource.getDomain(), resource.getName());
+  @PutMapping(path="/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public void update(@PathVariable String id, @RequestBody ShopResource resource) {
+    service.update(id, resource.getDomain(), resource.getName());
   }
 }

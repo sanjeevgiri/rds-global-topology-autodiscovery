@@ -16,17 +16,17 @@ public class ShopService {
   @Transactional(transactionManager = "readerTransactionManager", readOnly = true)
   public List<ShopResource> list() {
     return repo.findAll().stream()
-      .map(s -> new ShopResource(s.getDomain(), s.getName()))
+      .map(s -> new ShopResource(s.getId(), s.getDomain(), s.getName()))
       .collect(Collectors.toList());
   }
 
   @Transactional(transactionManager = "writerTransactionManager", readOnly = false)
   public void create(ShopResource resource) {
-    repo.save(new Shop(resource.getDomain(), resource.getName()));
+    repo.save(new Shop(resource.getId(), resource.getDomain(), resource.getName()));
   }
 
   @Transactional(transactionManager = "writerTransactionManager", readOnly = false)
-  public void update(String domain, String name) {
-    repo.save(new Shop(domain, name));
+  public void update(String id, String domain, String name) {
+    repo.save(new Shop(id, domain, name));
   }
 }
