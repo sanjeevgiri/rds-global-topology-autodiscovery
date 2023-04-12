@@ -4,7 +4,11 @@
 - Healthchecks for auto discoverying topology changes
 
 # Core Concept
+![1-boottime-topology.png](1-boottime-topology.png)
 
+![2-runtime-failover.png](2-runtime-failover.png)
+
+![3-runtime-topology.png](3-runtime-topology.png)
 
 # Prequisites
 - The process needs to be tied to roles that can perfrom the following AWS API calls
