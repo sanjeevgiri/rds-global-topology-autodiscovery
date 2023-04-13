@@ -1,8 +1,6 @@
 package com.rdsglobal.topology.autodiscovery.health;
 
-import com.rdsglobal.topology.autodiscovery.persistence.GlobalPersistenceClusterEndpoints;
 import com.rdsglobal.topology.autodiscovery.persistence.GlobalPersistenceClusterInfoService;
-import java.util.Optional;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,13 +28,7 @@ public class HealthService {
   }
 
   private HttpStatus evaluateStatus() {
-    GlobalPersistenceClusterEndpoints boottimeDb = globalPersistenceClusterInfoService.getBootTimeDbClusterEndpoints();
-    GlobalPersistenceClusterEndpoints runtimeDb = globalPersistenceClusterInfoService.getRunTimeDbClusterEndpoints();
-
-    return Optional.of(boottimeDb)
-      .filter(bootimeDbCfg -> bootimeDbCfg.getReaderJdbcUrl().equals(runtimeDb.getReaderJdbcUrl()))
-      .filter(bootimeDbCfg -> bootimeDbCfg.getWriterJdbcUrl().equals(runtimeDb.getWriterJdbcUrl()))
-      .map(any -> HttpStatus.OK)
-      .orElse(HttpStatus.SERVICE_UNAVAILABLE);
+    return globalPersistenceClusterInfoService.isBootTimeAndRunTimeClusterTopologyInSync() ?
+      HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
   }
 }

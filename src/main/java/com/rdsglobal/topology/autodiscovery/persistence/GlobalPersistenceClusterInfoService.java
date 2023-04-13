@@ -2,12 +2,17 @@ package com.rdsglobal.topology.autodiscovery.persistence;
 
 import com.amazonaws.services.rds.AmazonRDS;
 import io.vavr.control.Try;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GlobalPersistenceClusterInfoService {
+  private static final Logger LOGGER = LoggerFactory.getLogger(GlobalPersistenceClusterInfoService.class);
   private final GlobalPersistenceClusterEndpoints bootTimeDbClusterEndpoints;
   private final AmazonRDS amazonRdsGlobalClient;
   private final GlobalPersistenceClusterProperties props;
@@ -36,10 +41,32 @@ public class GlobalPersistenceClusterInfoService {
     return runTimeDbClusterEndpoints;
   }
 
-  @Scheduled(fixedDelay = 2, initialDelay = 2, timeUnit = TimeUnit.MINUTES)
+  @Scheduled(fixedDelay = 1, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
   public void refreshRunTimeDbClusterEndpoints() {
     this.runTimeDbClusterEndpoints = Try
       .of(() -> GlobalPersistenceClusterUtil.globalClusterEndpoints(amazonRdsGlobalClient, props))
+      .onFailure(e -> LOGGER.error("Encountered error while evaluating global db cluster topology", e))
       .getOrElse(runTimeDbClusterEndpoints); // fallback to last known config if rate limited / throttled down
+
+    LOGGER.info("""
+              
+        ********************** Refreshed RunTime DB Cluster Endpoints **************************************
+        Boottime config: {}
+        Runtime config: {}
+        In Sync: {}
+        ********************** Refreshed RunTime DB Cluster Endpoints **************************************
+              
+        """,
+      bootTimeDbClusterEndpoints,
+      runTimeDbClusterEndpoints,
+      isBootTimeAndRunTimeClusterTopologyInSync()
+    );
+  }
+
+  public boolean isBootTimeAndRunTimeClusterTopologyInSync() {
+    return Optional.of(bootTimeDbClusterEndpoints)
+      .filter(bootimeDbCfg -> bootimeDbCfg.getReaderJdbcUrl().equals(runTimeDbClusterEndpoints.getReaderJdbcUrl()))
+      .filter(bootimeDbCfg -> bootimeDbCfg.getWriterJdbcUrl().equals(runTimeDbClusterEndpoints.getWriterJdbcUrl()))
+      .isPresent();
   }
 }
