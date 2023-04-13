@@ -34,8 +34,7 @@ public class HealthService {
     GlobalPersistenceClusterEndpoints runtimeDb = globalPersistenceClusterInfoService.getRunTimeDbClusterEndpoints();
 
     return Optional.of(boottimeDb)
-      .filter(bootimeDbCfg -> bootimeDbCfg.getReaderJdbcUrl().equals(runtimeDb.getReaderJdbcUrl()))
-      .filter(bootimeDbCfg -> bootimeDbCfg.getWriterJdbcUrl().equals(runtimeDb.getWriterJdbcUrl()))
+      .filter(dbConfig -> dbConfig.equals(runtimeDb))
       .map(any -> HttpStatus.OK)
       .orElse(HttpStatus.SERVICE_UNAVAILABLE);
   }
