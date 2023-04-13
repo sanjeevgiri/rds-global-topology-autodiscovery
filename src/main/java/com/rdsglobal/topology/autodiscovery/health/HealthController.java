@@ -27,10 +27,12 @@ public class HealthController {
         
       ************** DETECTED HEALTH DOWN **********************
       Heahth Check Status:
-      {}
+      Status: {}
+      Boot time db cluster config: {}
+      Run time db cluster config: {}
       ************** DETECTED HEALTH DOWN **********************
             
-      """, h);
+      """, h.getStatus(), h.getBootTimeDbClusterEndpoints(), h.getRuntTimeDbClusterEndpoints());
 
     Optional.of(health)
       .filter(h -> !HttpStatus.OK.equals(h.getStatus()))
