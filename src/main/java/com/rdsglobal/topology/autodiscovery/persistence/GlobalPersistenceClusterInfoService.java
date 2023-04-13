@@ -50,11 +50,11 @@ public class GlobalPersistenceClusterInfoService {
 
     LOGGER.info("""
               
-        ********************** Refresed RunTime DB Cluster Endpoints **************************************
+        ********************** Refreshed RunTime DB Cluster Endpoints **************************************
         Boottime config: {}
         Runtime config: {}
         In Sync: {}
-        ********************** Refresed RunTime DB Cluster Endpoints **************************************
+        ********************** Refreshed RunTime DB Cluster Endpoints **************************************
               
         """,
       bootTimeDbClusterEndpoints,
