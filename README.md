@@ -14,11 +14,22 @@
 - The process needs to be tied to roles that can perfrom the following AWS API calls
   - `aws rds describe-global-cluster`
   - `aws rds describe-db-cluster-endpoints`
-- Plugin required environment variables for datasource credentials
+  - `aws rds delete-global-cluster`
+  - `aws rds describe-db-cluster`
+  - `aws rds create-global-cluster`
+- Configure required environment variables for datasource credentials
+
+# Need for deletion, and creation
+In case of disaster, the global cluster can be pushed into a state where it becomes memberless. During that time the 
+application cluster is expected to fail as a result of liveness check failures (healthcheck). At boot up time this specific
+implementation attempts to reconfigure memberless global cluster for which following actions are required:
+- Deletion of old memberless global cluster
+- Creation of new global cluster with same global cluster id
 
 # Required environment variables
 ```shell
 AUTODISCOVERY_DATASOURCE_GLOBALCLUSTERID=aws-global-db-cluster-id-value
+AUTODISCOVERY_DATASOURCE_GLOBALMEMBERLESSCLUSTERPREFERREDWRITER=regional-rds-cluster-id-for-region-defined-in-client-app-region
 AUTODISCOVERY_DATASOURCE_CLIENTAPPREGION=us-east-2
 AUTODISCOVERY_DATASOURCE_NAME=postgres
 AUTODISCOVERY_DATASOURCE_PORT=5432
@@ -62,6 +73,7 @@ mvn clean package -Pdocker
 ```shell
 DescribeGlobalClusters
 DescribeDBClusterEndpoints
+DeleteGlobalCluster
 ```
 - Update the role trust relationship to allow app runner to assume the role
 ![iamRoleTrustRelationship.png](iamRoleTrustRelationship.png)
@@ -82,3 +94,25 @@ DescribeDBClusterEndpoints
 Ensure that the k8s deployment is tied to a IAM Role as a Service Account (IRSA) with neccessary policies 
 to `DescribeGlobalClusters` and `DescribeDBClusterEndpoints`
 
+# Reference AWS Commands Used
+```shell
+
+# Get global cluster
+aws rds describe-global-clusters --global-cluster-identifier global-cluster-id
+
+# Get global cluster
+aws rds describe-db-cluster-endpoints --db-cluster-identifier cluster-id-name --region us-east-2
+aws rds describe-db-cluster-endpoints --db-cluster-identifier cluster-id-name --region us-west-2
+
+# Delete memberless global cluster
+aws rds delete-global-cluster --global-cluster-identifier global-cluster-id
+
+# Get preferred regional cluster writer for global cluster attachment
+aws rds describe-db-clusters --db-cluster-identifier cluster-id --region us-east-2
+
+# Create global cluster with preferred regional cluster as writer
+aws rds create-global-cluster --global-cluster-identifier global-cluster-id \
+--source-db-cluster-identifier `aws rds describe-db-clusters --db-cluster-identifier cluster-id --region us-east-2 \
+--query "*[].[DBClusterArn]" --output text` \
+--region us-east-2
+```
