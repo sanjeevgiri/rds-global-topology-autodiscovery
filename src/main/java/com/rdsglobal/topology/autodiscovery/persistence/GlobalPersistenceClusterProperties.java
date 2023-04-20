@@ -8,6 +8,7 @@ import lombok.Setter;
 public class GlobalPersistenceClusterProperties {
   private String clientAppRegion;
   private String globalClusterId;
+  private String globalMemberlessClusterPrefferedWriter;
   private String name;
   private String port;
 }

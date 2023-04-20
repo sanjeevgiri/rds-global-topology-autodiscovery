@@ -1,14 +1,16 @@
 package com.rdsglobal.topology.autodiscovery.persistence;
 
 import com.amazonaws.services.rds.AmazonRDS;
+import com.amazonaws.services.rds.model.GlobalCluster;
 import io.vavr.control.Try;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 @Service
 public class GlobalPersistenceClusterInfoService {
@@ -16,6 +18,7 @@ public class GlobalPersistenceClusterInfoService {
   private final GlobalPersistenceClusterEndpoints bootTimeDbClusterEndpoints;
   private final AmazonRDS amazonRdsGlobalClient;
   private final GlobalPersistenceClusterProperties props;
+  private final GlobalPersistenceClusterEndpoints emptyRuntimeDbClusterEndpoints;
   private GlobalPersistenceClusterEndpoints runTimeDbClusterEndpoints;
 
   public GlobalPersistenceClusterInfoService(
@@ -31,6 +34,12 @@ public class GlobalPersistenceClusterInfoService {
       .readerJdbcUrl(bootTimeDbClusterEndpoints.getReaderJdbcUrl())
       .writerJdbcUrl(bootTimeDbClusterEndpoints.getWriterJdbcUrl())
       .build();
+
+    emptyRuntimeDbClusterEndpoints = GlobalPersistenceClusterEndpoints.builder()
+      .globalClusterIdentifier(bootTimeDbClusterEndpoints.getGlobalClusterIdentifier())
+      .readerJdbcUrl("")
+      .writerJdbcUrl("")
+      .build();
   }
 
   public GlobalPersistenceClusterEndpoints getBootTimeDbClusterEndpoints() {
@@ -43,10 +52,21 @@ public class GlobalPersistenceClusterInfoService {
 
   @Scheduled(fixedDelay = 1, initialDelay = 1, timeUnit = TimeUnit.MINUTES)
   public void refreshRunTimeDbClusterEndpoints() {
-    this.runTimeDbClusterEndpoints = Try
-      .of(() -> GlobalPersistenceClusterUtil.globalClusterEndpoints(amazonRdsGlobalClient, props))
+
+    // There could be failure while trying to fetch global cluster details
+    Try<GlobalCluster> globalCluster = Try
+      .of(() -> GlobalPersistenceClusterUtil.globalCluster(amazonRdsGlobalClient, props.getGlobalClusterId()));
+
+    // fallback to last known config if rate limited / throttled down, fallback to empty is global cluster is memberless
+    Supplier<GlobalPersistenceClusterEndpoints> fallbackRunTimeDbClusterEndpoints = () -> globalCluster
+      .map(gc -> !CollectionUtils.isEmpty(gc.getGlobalClusterMembers()) ? runTimeDbClusterEndpoints :
+        emptyRuntimeDbClusterEndpoints)
+      .getOrElse(runTimeDbClusterEndpoints);
+
+    runTimeDbClusterEndpoints = globalCluster
+      .map(gc -> GlobalPersistenceClusterUtil.globalClusterEndpoints(gc, props))
       .onFailure(e -> LOGGER.error("Encountered error while evaluating global db cluster topology", e))
-      .getOrElse(runTimeDbClusterEndpoints); // fallback to last known config if rate limited / throttled down
+      .getOrElse(fallbackRunTimeDbClusterEndpoints);
 
     LOGGER.info("""
               
