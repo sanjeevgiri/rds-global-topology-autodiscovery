@@ -29,7 +29,7 @@ implementation attempts to reconfigure memberless global cluster for which follo
 # Required environment variables
 ```shell
 AUTODISCOVERY_DATASOURCE_GLOBALCLUSTERID=aws-global-db-cluster-id-value
-AUTODISCOVERY_DATASOURCE_GLOBALMEMBERLESSCLUSTERPREFERREDWRITER=regional-rds-cluster-id-for-region-defined-in-client-app-region
+AUTODISCOVERY_DATASOURCE_GLOBALMEMBERLESSCLUSTERPREFFEREDWRITER=regional-rds-cluster-id-for-region-defined-in-client-app-region
 AUTODISCOVERY_DATASOURCE_CLIENTAPPREGION=us-east-2
 AUTODISCOVERY_DATASOURCE_NAME=postgres
 AUTODISCOVERY_DATASOURCE_PORT=5432
@@ -69,12 +69,43 @@ mvn clean package -Pdocker
 ```
 - Create an IAM role with permissions to access AWS RDS describe* APIs
 ![iamRole.png](iamRole.png)
+- 
 **I used a predefined policy as an example. For production usage please trim it down to the following:**
 ```shell
 DescribeGlobalClusters
 DescribeDBClusterEndpoints
+DescribeDbClusters
 DeleteGlobalCluster
+CreateGlobalCluster
 ```
+```shell
+#Sample policy document
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "rds:DescribeGlobalClusters",
+                "rds:DescribeDBClusterEndpoints",
+                "rds:DescribeDbClusters"
+            ],
+            "Effect": "Allow",
+            "Resource": "*",
+            "Sid": "InspectRdsClusterDetails"
+        },
+        {
+            "Action": [
+                "rds:CreateGlobalCluster",
+                "rds:DeleteGlobalCluster"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:rds:*:627915540598:cluster:global-cluster-id",
+            "Sid": "ReconfigureMemberlessGlobalRdsCluster"
+        }
+    ]
+}
+```
+
 - Update the role trust relationship to allow app runner to assume the role
 ![iamRoleTrustRelationship.png](iamRoleTrustRelationship.png)
 
