@@ -2,6 +2,7 @@
 - Boot time discovery of aurora rds global cluster based on cluster id
 - Regional proximity for reads and fallback to primary region reader if unavailable
 - Healthchecks for auto discoverying topology changes
+- Boot time healing of memberless global cluster, by attaching an functioning preferred regional cluster if available 
 
 # Core Concept
 ![1-boottime-topology.png](1-boottime-topology.png)
