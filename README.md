@@ -97,10 +97,16 @@ CreateGlobalCluster
         {
             "Action": [
                 "rds:CreateGlobalCluster",
-                "rds:DeleteGlobalCluster"
+                "rds:DeleteGlobalCluster",
+                "rds:CreateGlobalCluster"
             ],
             "Effect": "Allow",
-            "Resource": "arn:aws:rds:*:627915540598:cluster:global-cluster-id",
+            "Resource": [
+                "arn:aws:rds::accountid-value:global-cluster:global-cluster-id-value",
+                "arn:aws:rds:*:accountid-value:global-cluster:global-cluster-id-value",
+                "arn:aws:rds:us-west-2:accountid-value:cluster:regional-cluster-id-value",
+                "arn:aws:rds:us-east-2:accountid-value:cluster:regional-cluster-id-value"
+            ],
             "Sid": "ReconfigureMemberlessGlobalRdsCluster"
         }
     ]
@@ -138,6 +144,18 @@ aws rds describe-db-cluster-endpoints --db-cluster-identifier cluster-id-name --
 
 # Delete memberless global cluster
 aws rds delete-global-cluster --global-cluster-identifier global-cluster-id
+# Reference AWS Commands Used
+```shell
+
+# Get preferred regional cluster writer for global cluster attachment
+aws rds describe-db-clusters --db-cluster-identifier cluster-id --region us-east-2
+
+# Create global cluster with preferred regional cluster as writer
+aws rds create-global-cluster --global-cluster-identifier global-cluster-id \
+--source-db-cluster-identifier `aws rds describe-db-clusters --db-cluster-identifier cluster-id --region us-east-2 \
+--query "*[].[DBClusterArn]" --output text` \
+--region us-east-2
+```
 
 # Get preferred regional cluster writer for global cluster attachment
 aws rds describe-db-clusters --db-cluster-identifier cluster-id --region us-east-2
