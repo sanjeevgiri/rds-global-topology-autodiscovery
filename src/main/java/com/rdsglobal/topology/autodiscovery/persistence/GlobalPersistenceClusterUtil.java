@@ -11,10 +11,13 @@ import com.amazonaws.services.rds.model.DescribeDBClusterEndpointsRequest;
 import com.amazonaws.services.rds.model.DescribeDBClusterEndpointsResult;
 import com.amazonaws.services.rds.model.DescribeDBClustersRequest;
 import com.amazonaws.services.rds.model.DescribeGlobalClustersRequest;
+import com.amazonaws.services.rds.model.DescribeGlobalClustersResult;
 import com.amazonaws.services.rds.model.GlobalCluster;
 import com.amazonaws.services.rds.model.GlobalClusterMember;
+import com.amazonaws.services.rds.model.GlobalClusterNotFoundException;
 import com.zaxxer.hikari.HikariConfig;
 import io.vavr.control.Try;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -113,22 +116,34 @@ public final class GlobalPersistenceClusterUtil {
   private static GlobalCluster reconfiguredGlobalMemberlessClusterWithPreferredWriter(
     AmazonRDS rdsGlobalClient, GlobalPersistenceClusterProperties props, DBCluster dbCluster
   ) {
-    rdsGlobalClient
-      .deleteGlobalCluster(new DeleteGlobalClusterRequest().withGlobalClusterIdentifier(props.getGlobalClusterId()));
+    Supplier<String> errorMessage = () -> "Unable to create global custer "
+                                          + props.getGlobalClusterId()
+                                          + " from region "
+                                          + props.getClientAppRegion()
+                                          + ": ";
 
-    return rdsGlobalClient.createGlobalCluster(new CreateGlobalClusterRequest()
-      .withGlobalClusterIdentifier(props.getGlobalClusterId())
-      .withSourceDBClusterIdentifier(dbCluster.getDBClusterArn())
-    );
+    Supplier<GlobalCluster> globalCluster = () -> {
+      LOGGER.info("Recreating global rds global cluster");
+      return rdsGlobalClient.createGlobalCluster(new CreateGlobalClusterRequest()
+        .withGlobalClusterIdentifier(props.getGlobalClusterId())
+        .withSourceDBClusterIdentifier(dbCluster.getDBClusterArn())
+      );
+    };
+
+    return Try.of(globalCluster::get)
+      .onFailure(e -> LOGGER.error(errorMessage.get(), e))
+      .get();
   }
 
   public static Optional<GlobalCluster> globalCluster(AmazonRDS amazonRdsGlobalClient, String globalClusterIdentifier) {
     DescribeGlobalClustersRequest descGlobalClusterReq = new DescribeGlobalClustersRequest();
     descGlobalClusterReq.setGlobalClusterIdentifier(globalClusterIdentifier);
 
-    return amazonRdsGlobalClient
-      .describeGlobalClusters(descGlobalClusterReq)
-      .getGlobalClusters()
+    return Try.of(() -> amazonRdsGlobalClient.describeGlobalClusters(descGlobalClusterReq))
+      .map(DescribeGlobalClustersResult::getGlobalClusters)
+      .onFailure(e -> LOGGER.error("Error while getting global cluster " + globalClusterIdentifier, e))
+      .recoverWith(GlobalClusterNotFoundException.class, e -> Try.of(Collections::emptyList))
+      .get()
       .stream()
       .findFirst();
   }
