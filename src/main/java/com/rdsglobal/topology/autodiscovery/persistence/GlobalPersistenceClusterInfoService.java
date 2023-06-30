@@ -55,7 +55,8 @@ public class GlobalPersistenceClusterInfoService {
 
     // There could be failure while trying to fetch global cluster details
     Try<GlobalCluster> globalCluster = Try
-      .of(() -> GlobalPersistenceClusterUtil.globalCluster(amazonRdsGlobalClient, props.getGlobalClusterId()));
+      .of(() -> GlobalPersistenceClusterUtil.globalCluster(amazonRdsGlobalClient, props.getGlobalClusterId()))
+      .map(Optional::get);
 
     // fallback to last known config if rate limited / throttled down, fallback to empty is global cluster is memberless
     Supplier<GlobalPersistenceClusterEndpoints> fallbackRunTimeDbClusterEndpoints = () -> globalCluster
